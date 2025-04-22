@@ -41,19 +41,13 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
   const createNewTeam = () => {
     if (!newTeamName) return
 
-    // Aquí normalmente llamaríamos a una API para crear el equipo
-    // Por ahora, simulamos la creación añadiendo el equipo al contexto
     const newTeam = {
       label: newTeamName,
       value: newTeamName.toLowerCase().replace(/\s+/g, "-"),
     }
 
-    // Añadir el nuevo equipo al contexto
-    // Nota: Esto requiere que el contexto tenga una función para añadir equipos
-    // que no implementamos anteriormente, así que lo simulamos
     console.log("Nuevo equipo creado:", newTeam)
-
-    // Limpiar y cerrar
+    // Aquí deberías tener una función para añadir el equipo al contexto si deseas
     setNewTeamName("")
     setShowNewTeamDialog(false)
   }
@@ -69,19 +63,25 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
             aria-label="Seleccionar equipo"
             className={cn("w-[200px] justify-between", className)}
           >
-            <Avatar className="mr-2 h-5 w-5">
-              <AvatarImage src={`https://avatar.vercel.sh/${selectedTeam.value}.png`} alt={selectedTeam.label} />
-              <AvatarFallback>SC</AvatarFallback>
-            </Avatar>
-            {selectedTeam.label}
+            {selectedTeam ? (
+              <>
+                <Avatar className="mr-2 h-5 w-5">
+                  <AvatarImage src={`https://avatar.vercel.sh/${selectedTeam.value}.png`} alt={selectedTeam.label} />
+                  <AvatarFallback>{selectedTeam.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                {selectedTeam.label}
+              </>
+            ) : (
+              <>Seleccionar equipo</>
+            )}
             <CaretSortIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[200px] p-0">
           <Command>
+            <CommandInput placeholder="Buscar equipo..." />
+            <CommandEmpty>No se encontraron equipos.</CommandEmpty>
             <CommandList>
-              <CommandInput placeholder="Buscar equipo..." />
-              <CommandEmpty>No se encontraron equipos.</CommandEmpty>
               <CommandGroup heading="Equipos">
                 {teams.map((team) => (
                   <CommandItem
@@ -94,18 +94,16 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
                   >
                     <Avatar className="mr-2 h-5 w-5">
                       <AvatarImage src={`https://avatar.vercel.sh/${team.value}.png`} alt={team.label} />
-                      <AvatarFallback>SC</AvatarFallback>
+                      <AvatarFallback>{team.label.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {team.label}
                     <CheckIcon
-                      className={cn("ml-auto h-4 w-4", selectedTeam.value === team.value ? "opacity-100" : "opacity-0")}
+                      className={cn("ml-auto h-4 w-4", selectedTeam?.value === team.value ? "opacity-100" : "opacity-0")}
                     />
                   </CommandItem>
                 ))}
               </CommandGroup>
-            </CommandList>
-            <CommandSeparator />
-            <CommandList>
+              <CommandSeparator />
               <CommandGroup>
                 <CommandItem
                   onSelect={() => {
@@ -121,22 +119,21 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
           </Command>
         </PopoverContent>
       </Popover>
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Crear equipo</DialogTitle>
           <DialogDescription>Añade un nuevo equipo para colaborar con tus compañeros.</DialogDescription>
         </DialogHeader>
-        <div>
-          <div className="space-y-4 py-2 pb-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre del equipo</Label>
-              <Input
-                id="name"
-                placeholder="Acme Inc."
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-              />
-            </div>
+        <div className="space-y-4 py-2 pb-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre del equipo</Label>
+            <Input
+              id="name"
+              placeholder="Acme Inc."
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
@@ -149,4 +146,3 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
     </Dialog>
   )
 }
-

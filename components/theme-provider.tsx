@@ -77,4 +77,3 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 export function useThemePreview() {
   return React.useContext(ThemePreviewContext)
 }
-
