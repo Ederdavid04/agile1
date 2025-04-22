@@ -33,21 +33,21 @@ type PopoverTriggerProps = React.ComponentPropsWithoutRef<typeof PopoverTrigger>
 interface TeamSwitcherProps extends PopoverTriggerProps {}
 
 export function TeamSwitcher({ className }: TeamSwitcherProps) {
-  const { teams, selectedTeam, setSelectedTeam } = useTeam()
+  const { teams, selectedTeam, setSelectedTeam, addTeam } = useTeam()
   const [open, setOpen] = React.useState(false)
   const [showNewTeamDialog, setShowNewTeamDialog] = React.useState(false)
   const [newTeamName, setNewTeamName] = React.useState("")
 
   const createNewTeam = () => {
-    if (!newTeamName) return
+    if (!newTeamName.trim()) return
 
     const newTeam = {
       label: newTeamName,
       value: newTeamName.toLowerCase().replace(/\s+/g, "-"),
     }
 
-    console.log("Nuevo equipo creado:", newTeam)
-    // Aquí deberías tener una función para añadir el equipo al contexto si deseas
+    addTeam(newTeam)
+    setSelectedTeam(newTeam)
     setNewTeamName("")
     setShowNewTeamDialog(false)
   }
@@ -83,25 +83,29 @@ export function TeamSwitcher({ className }: TeamSwitcherProps) {
             <CommandEmpty>No se encontraron equipos.</CommandEmpty>
             <CommandList>
               <CommandGroup heading="Equipos">
-                {teams.map((team) => (
-                  <CommandItem
-                    key={team.value}
-                    onSelect={() => {
-                      setSelectedTeam(team)
-                      setOpen(false)
-                    }}
-                    className="text-sm"
-                  >
-                    <Avatar className="mr-2 h-5 w-5">
-                      <AvatarImage src={`https://avatar.vercel.sh/${team.value}.png`} alt={team.label} />
-                      <AvatarFallback>{team.label.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    {team.label}
-                    <CheckIcon
-                      className={cn("ml-auto h-4 w-4", selectedTeam?.value === team.value ? "opacity-100" : "opacity-0")}
-                    />
-                  </CommandItem>
-                ))}
+              {teams.map((team, index) => (
+            <CommandItem
+              key={team.value || index} // ← alternativo seguro si hay duplicados
+              onSelect={() => {
+                setSelectedTeam(team)
+                setOpen(false)
+              }}
+              className="text-sm"
+            >
+              <Avatar className="mr-2 h-5 w-5">
+                <AvatarImage src={`https://avatar.vercel.sh/${team.value}.png`} alt={team.label} />
+                <AvatarFallback>{team.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              {team.label}
+              <CheckIcon
+                className={cn(
+                  "ml-auto h-4 w-4",
+                  selectedTeam?.value === team.value ? "opacity-100" : "opacity-0"
+                )}
+              />
+            </CommandItem>
+          ))}
+
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup>

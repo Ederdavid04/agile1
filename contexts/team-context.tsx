@@ -1,107 +1,108 @@
-'use client'
+// contexts/team-context.tsx
+"use client"
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from 'react'
+import React, { createContext, useContext, useEffect, useState } from "react"
 
-export type TeamMember = {
-  id: string
-  name: string
-  role: string
-  email: string
-  avatar?: string
-}
-
-export type Team = {
+type Team = {
   label: string
   value: string
 }
 
-type TeamContextType = {
-  teams: Team[]
-  addTeam: (team: Team) => void
-  members: TeamMember[]
-  selectedTeam: Team | null
-  setSelectedTeam: (team: Team) => void
-  addMember: (member: TeamMember) => void
-  removeMember: (id: string) => void
-  isLoading: boolean
+export type TeamMember = {
+  id: number
+  name: string
+  role: string
+  email: string
+  avatar: string
 }
 
-const TeamContext = createContext<TeamContextType | undefined>(undefined)
+interface TeamContextProps {
+  teams: Team[]
+  selectedTeam: Team | null
+  setSelectedTeam: (team: Team) => void
+  addTeam: (team: Omit<Team, "value">) => Promise<void>
+  loading: boolean
+  members: TeamMember[]
+  membersLoading: boolean
+}
 
-export function TeamProvider({ children }: { children: ReactNode }) {
+const TeamContext = createContext<TeamContextProps | undefined>(undefined)
+
+export const TeamProvider = ({ children }: { children: React.ReactNode }) => {
   const [teams, setTeams] = useState<Team[]>([])
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [membersLoading, setMembersLoading] = useState<boolean>(false)
 
-  // Cargar equipos al montar
-  useEffect(() => {
-    const loadTeams = async () => {
-      try {
-        const res = await fetch('/api/teams')
-        const data: Team[] = await res.json()
-        setTeams(data)
-        if (data.length > 0) {
-          setSelectedTeam(data[0])
-        }
-      } catch (err) {
-        console.error('Error cargando equipos:', err)
-      }
+  // Obtener equipos desde la API
+  const fetchTeams = async () => {
+    try {
+      const res = await fetch("/api/teams")
+      const data = await res.json()
+      setTeams(data)
+    } catch (error) {
+      console.error("Error al obtener equipos:", error)
+    } finally {
+      setLoading(false)
     }
-    
+  }
 
-    loadTeams()
+  useEffect(() => {
+    fetchTeams()
   }, [])
 
-  // Cargar miembros cuando cambia el equipo seleccionado
   useEffect(() => {
-    const loadMembers = async () => {
+    const fetchMembers = async () => {
       if (!selectedTeam) return
-      setIsLoading(true)
+      setMembersLoading(true)
       try {
-        const res = await fetch(`/api/team-members?teamId=${selectedTeam.value}`)
-        const data: TeamMember[] = await res.json()
+        const res = await fetch(`/api/teams/${selectedTeam.value}/members`)
+        const data = await res.json()
         setMembers(data)
-      } catch (err) {
-        console.error('Error cargando miembros del equipo:', err)
+      } catch (error) {
+        console.error("Error al obtener miembros:", error)
         setMembers([])
       } finally {
-        setIsLoading(false)
+        setMembersLoading(false)
       }
     }
 
-    loadMembers()
+    fetchMembers()
   }, [selectedTeam])
 
-  const addTeam = (team: Team) => {
-    setTeams([...teams, team])
-  }
+  const addTeam = async (team: Omit<Team, "value">) => {
+    try {
+      const newTeam = {
+        label: team.label,
+        value: team.label.toLowerCase().replace(/\s+/g, "-"),
+      }
 
-  const addMember = (member: TeamMember) => {
-    setMembers([...members, member])
-  }
+      const res = await fetch("/api/teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTeam),
+      })
 
-  const removeMember = (id: string) => {
-    setMembers(members.filter((member) => member.id !== id))
+      if (!res.ok) throw new Error("Error al crear equipo")
+
+      const createdTeam: Team = await res.json()
+      setTeams((prev) => [...prev, createdTeam])
+    } catch (error) {
+      console.error("Error al agregar equipo:", error)
+    }
   }
 
   return (
     <TeamContext.Provider
       value={{
         teams,
-        addTeam,
-        members,
         selectedTeam,
         setSelectedTeam,
-        addMember,
-        removeMember,
-        isLoading,
+        addTeam,
+        loading,
+        members,
+        membersLoading,
       }}
     >
       {children}
@@ -109,10 +110,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useTeam() {
+export const useTeam = () => {
   const context = useContext(TeamContext)
-  if (context === undefined) {
-    throw new Error('useTeam debe ser usado dentro de un TeamProvider')
-  }
+  if (!context) throw new Error("useTeam debe usarse dentro de TeamProvider")
   return context
 }
